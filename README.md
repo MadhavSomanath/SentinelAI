@@ -1,6 +1,6 @@
 # SentinelAI
 
-SentinelAI is a portfolio-ready LLM governance layer built around three ideas:
+SentinelAI is a portfolio project showcasing LLM governance layer built around three ideas:
 
 - validate every request before it reaches a model
 - block unsafe prompts with a semantic firewall backed by Supabase pgvector
