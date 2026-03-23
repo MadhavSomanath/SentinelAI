@@ -87,9 +87,9 @@ Add the environment variables from `.env.example` as Hugging Face Space Secrets,
 
 ## Recommended screenshots
 
-- Home dashboard
-- Trace Explorer with one blocked and one successful prompt
-- Policy Manager with the threshold slider and simulator
+- Home dashboard (in progress - deploying to cloud)
+- Trace Explorer with one blocked and one successful prompt (in progress)
+- Policy Manager with the threshold slider and simulator (in progress)
 
 ## Notes
 
