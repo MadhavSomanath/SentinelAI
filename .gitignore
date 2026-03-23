@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.pytest_cache/
+.venv/
+__pycache__/
+*.pyc
+
+# Local editor or runtime files
+.streamlit/
+
+# Source docs kept local, not pushed to the public portfolio repo
+SentinelAI - Briefing Document.docx
+SentinelAI _ PRDv1.docx
+SentinelAI _ PRDv4.docx
+SentinelAI.pdf
+Google Gemini.pdf
+Security For Vibe-Coded Apps (+ Prompt).docx

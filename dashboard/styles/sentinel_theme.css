@@ -1,0 +1,35 @@
+:root {
+  --bg: #0b1020;
+  --surface: #141b2d;
+  --surface-2: #1c2440;
+  --text: #f4f7fb;
+  --muted: #a6b0c3;
+  --accent: #4fb3ff;
+  --accent-2: #52d7a7;
+  --danger: #ff6b6b;
+}
+
+.stApp {
+  background: radial-gradient(circle at top left, #17213f 0%, #0b1020 45%, #08101a 100%);
+  color: var(--text);
+}
+
+[data-testid="stMetric"] {
+  background: rgba(20, 27, 45, 0.88);
+  border: 1px solid rgba(79, 179, 255, 0.18);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+[data-testid="stSidebar"] {
+  background: rgba(8, 16, 26, 0.95);
+}
+
+h1, h2, h3 {
+  color: var(--text);
+}
+
+code {
+  background: rgba(28, 36, 64, 0.95);
+  color: #d8ecff;
+}
