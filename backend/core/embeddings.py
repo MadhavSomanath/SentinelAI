@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import hashlib
 from math import sqrt
 import re
 
@@ -92,9 +93,14 @@ class SimpleEmbeddingService:
         "guardrails": "restricted",
     }
 
-    def __init__(self, dimensions: int = 64) -> None:
+    def __init__(self, dimensions: int = 256) -> None:
         """Initialize the simple hashing embedder."""
         self.dimensions = dimensions
+
+    def _token_index(self, token: str) -> int:
+        """Map a token to a deterministic bucket index."""
+        digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        return int(digest[:8], 16) % self.dimensions
 
     def _normalize_text(self, text: str) -> list[str]:
         """Normalize the text into coarse semantic tokens."""
@@ -115,7 +121,7 @@ class SimpleEmbeddingService:
         counts = Counter(tokens)
         vector = [0.0] * self.dimensions
         for token, weight in counts.items():
-            vector[hash(token) % self.dimensions] += float(weight)
+            vector[self._token_index(token)] += float(weight)
 
         norm = sqrt(sum(value * value for value in vector))
         if norm == 0:
