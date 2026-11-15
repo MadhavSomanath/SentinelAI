@@ -24,8 +24,11 @@ class Settings(BaseSettings):
     enable_langfuse: bool = True
     api_base_url: str = "http://localhost:8000"
     streamlit_server_port: int = 8501
-    firewall_threshold: float = 0.90
+    firewall_threshold: float = 0.55  # best recall at <=5% false positives in evals/ run 1
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    injection_classifier_enabled: bool = True
+    injection_classifier_model: str = "protectai/deberta-v3-base-prompt-injection-v2"
+    injection_classifier_threshold: float = 0.5
     repository_mode: Literal["supabase", "memory"] = "memory"
 
     supabase_url: str | None = None

@@ -17,7 +17,9 @@ from backend.services.llm_router import LLMRouter
 @pytest.fixture()
 def test_app():
     """Create a test application with in-memory dependencies."""
-    settings = Settings(repository_mode="memory", enable_langfuse=False)
+    settings = Settings(
+        repository_mode="memory", enable_langfuse=False, injection_classifier_enabled=False
+    )
     repository = InMemoryRepository(threshold=0.6)
     embedder = SimpleEmbeddingService()
 

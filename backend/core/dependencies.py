@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from fastapi import Request
 
+from backend.core.classifier import InjectionClassifier
 from backend.core.config import Settings, get_settings
 from backend.core.embeddings import SentenceTransformerEmbeddingService
 from backend.core.firewall import FirewallService
@@ -23,6 +24,7 @@ class AppContainer:
     embedding_service: object
     trace_service: object
     llm_router: LLMRouter
+    classifier: InjectionClassifier | None = None
 
 
 def build_container(
@@ -32,6 +34,7 @@ def build_container(
     embedding_service: object | None = None,
     trace_service: object | None = None,
     llm_router: LLMRouter | None = None,
+    classifier: InjectionClassifier | None = None,
 ) -> AppContainer:
     """Build the default application container."""
     active_settings = settings or get_settings()
@@ -39,9 +42,15 @@ def build_container(
     active_repository = repository
     if active_repository is None:
         active_repository = (
-            InMemoryRepository()
+            InMemoryRepository(threshold=active_settings.firewall_threshold)
             if active_settings.repository_mode == "memory"
             else SupabaseRepository(active_settings)
+        )
+
+    if classifier is None and active_settings.injection_classifier_enabled:
+        classifier = InjectionClassifier(
+            active_settings.injection_classifier_model,
+            active_settings.injection_classifier_threshold,
         )
 
     return AppContainer(
@@ -51,6 +60,7 @@ def build_container(
         or SentenceTransformerEmbeddingService(active_settings.embedding_model_name),
         trace_service=trace_service or LangfuseTraceService(active_settings),
         llm_router=llm_router or LLMRouter(active_settings),
+        classifier=classifier,
     )
 
 
@@ -72,7 +82,7 @@ def get_embedding_service(request: Request) -> object:
 def get_firewall_service(request: Request) -> FirewallService:
     """Construct a firewall service from the active dependencies."""
     container = get_container(request)
-    return FirewallService(container.repository, container.embedding_service)
+    return FirewallService(container.repository, container.embedding_service, container.classifier)
 
 
 def get_trace_service(request: Request) -> object:
