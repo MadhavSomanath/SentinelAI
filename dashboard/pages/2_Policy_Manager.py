@@ -81,7 +81,7 @@ if st.button("Run Firewall Check"):
         result = post_json("/api/v1/policies/simulate", {"prompt": simulated_prompt})
         label = "BLOCKED" if result["blocked"] else "PASSED"
         st.write(f"Result: **{label}**")
-        st.write(f"Similarity Score: {result['similarity_score']}")
+        st.write(f"Risk Score: {result['similarity_score']}")
         st.write(f"Policy: {result.get('policy_id') or 'None'}")
     except Exception as exc:
         st.error(f"Unable to run simulator: {exc}")

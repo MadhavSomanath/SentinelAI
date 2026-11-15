@@ -18,7 +18,7 @@ load_css()
 
 SAMPLE_PROMPTS = {
     "Safe Example": {
-        "prompt": "Summarize this project in two clear sentences for a portfolio reviewer.",
+        "prompt": "Summarize our Q3 vendor risk report in five bullets for the steering committee.",
         "route": "mock",
     },
     "Blocked Example": {
@@ -131,13 +131,13 @@ else:
         st.markdown("**Model Output**")
         st.code(body.get("output", ""), language="text")
     elif status_code == 403:
-        st.warning("Prompt was blocked by the semantic firewall.")
+        st.warning("Prompt was blocked by the firewall.")
         summary_columns = st.columns(4)
         summary_columns[0].metric("HTTP Status", status_code)
         summary_columns[1].metric("Code", body.get("code", "n/a"))
         summary_columns[2].metric("Policy ID", body.get("policy_id", "n/a"))
         summary_columns[3].metric("Latency (ms)", body.get("latency_ms", 0))
-        st.write(f"Similarity Score: {body.get('similarity_score', 0)}")
+        st.write(f"Risk Score: {body.get('similarity_score', 0)}")
         st.code(body.get("message", "Blocked"), language="text")
     else:
         st.error(f"Request failed with status {status_code}.")

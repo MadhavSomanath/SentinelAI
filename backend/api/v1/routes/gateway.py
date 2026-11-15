@@ -94,7 +94,7 @@ async def process_gateway_request(
         )
         response = PolicyViolationResponse(
             code="POLICY_VIOLATION",
-            message="Prompt blocked by semantic firewall.",
+            message=decision.message,
             trace_id=trace_id,
             policy_id=decision.policy_id,
             similarity_score=decision.similarity_score,

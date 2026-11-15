@@ -45,7 +45,7 @@ class LLMRouter:
         preview = contract.prompt.strip().replace("\n", " ")
         output = (
             "Mock response from SentinelAI. The request passed validation and the "
-            f"semantic firewall. Prompt preview: {preview[:180]}"
+            f"firewall. Prompt preview: {preview[:180]}"
         )
         estimated_prompt_tokens = max(1, min(512, len(contract.prompt.split()) * 2))
         estimated_completion_tokens = max(12, min(contract.max_tokens, len(output.split()) * 2))
