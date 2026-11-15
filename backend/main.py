@@ -12,7 +12,7 @@ from backend.api.v1.routes.gateway import router as gateway_router
 from backend.api.v1.routes.policies import router as policies_router
 from backend.api.v1.routes.traces import router as traces_router
 from backend.core.config import Settings, get_settings
-from backend.core.demo_data import DEMO_POLICIES
+from backend.core.demo_data import DEMO_POLICIES, EXTRA_SEED_POLICIES
 from backend.core.dependencies import build_container
 
 
@@ -40,7 +40,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if existing:
             return
 
-        for policy_id, intent_text, category in DEMO_POLICIES:
+        for policy_id, intent_text, category in [*DEMO_POLICIES, *EXTRA_SEED_POLICIES]:
             embedding = await container.embedding_service.embed_text(intent_text)
             await container.repository.create_policy(
                 policy_id=policy_id,

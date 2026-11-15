@@ -4,6 +4,7 @@ pydantic>=2.10,<3
 pydantic-settings>=2.5,<3
 supabase>=2.9,<3
 sentence-transformers>=3.2,<4
+transformers>=4.44,<5
 litellm>=1.51,<2
 langfuse>=2.44,<4
 streamlit>=1.39,<2
