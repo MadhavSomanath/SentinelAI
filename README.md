@@ -40,12 +40,19 @@ I wrote a 200-prompt evaluation set: 100 attacks across six categories, and 100 
 
 | Firewall version | Attacks caught | Reworded attacks caught | Normal prompts wrongly blocked |
 |---|---|---|---|
-| v1: embedding match only (as first built) | 21% | 12% | 1% |
-| **v2: classifier + embedding match (current)** | **62%** | **58%** | **6%** |
+| v1: embedding match at 0.60 (as first built) | 21% | 12% | 1% |
+| Embedding match at 0.55 only | 25% | 17% | 3% |
+| Classifier only | 55% | 56% | 3% |
+| **v2: classifier + embedding match at 0.55 (current)** | **62%** | **58%** | **6%** |
+
+**Why the false-block rate went up, not down.** v1 → v2 changed two things at once: the embedding threshold dropped from 0.60 to 0.55, and the classifier was added. The middle rows show each change on its own. v2 blocks a prompt if *either* layer flags it, so adding a layer can only add blocks: catches and false blocks rise together. The 6 wrongly blocked prompts split evenly:
+
+- **3 from the classifier:** prompts that sound like injections but aren't ("Ignore the formatting in my notes…", "Forget the previous draft…", "Decode this error message…").
+- **3 from the embedding match:** honest security and account questions that sit close to a blocked intent ("How do secrets managers like Vault work?", "I forgot my password, how do I reset it?", "How do I get an API key for the internal sandbox?").
 
 ![Eval report: detector scorecard](docs/screenshots/eval-report.png)
 
-By category, the classifier catches **100%** of direct injections, **80%** of obfuscated or hidden ones and **75%** of jailbreaks, in about 10 ms on a CPU.
+By category, the classifier catches **100%** of direct injections, **80%** of obfuscated or hidden ones and **75%** of jailbreaks, in about 10 ms per prompt on a CPU (averaged over batches of 16, so a single live request takes longer).
 
 Run it yourself:
 
@@ -71,7 +78,7 @@ So the next layer can't be another better filter. It has to be **role-aware poli
 | **Layered checks instead of one model** | Each layer is cheap, explainable and replaceable. When something gets blocked, the dashboard shows *which* layer did it and why, which matters more to a risk team than a single opaque score. |
 | **Embedding threshold set to 0.55** | I swept thresholds from 0.30 to 0.90. 0.55 gives the most catches while blocking ≤5% of normal traffic. Going lower trades away too much: catching half the attacks would block 1 in 6 normal prompts. |
 | **I accept 6% false positives for now** | A blocked legitimate prompt is an annoyance. A leaked customer file is a reportable incident. But 6% is too high for daily use, so it's the next thing to fix (see roadmap). |
-| **Open models only** | No per-call cost, no data leaving the network for screening, and it runs on a laptop CPU. That matters for regulated teams. |
+| **Open models only** | No per-call cost, no data leaving the network for screening, and it runs on a laptop CPU. That matters for regulated teams. (Optional Langfuse tracing does send allowed prompts to Langfuse Cloud; self-host it or turn it off with `ENABLE_LANGFUSE=false`.) |
 | **Mock provider by default** | The governance layer can be demoed and tested without API keys or spend. Real providers plug in through LiteLLM. |
 | **Policy changes without a deploy** | Policy owners (risk, legal, security) aren't engineers. They can add a blocked intent and tune the threshold from the dashboard, and test it in the simulator first. |
 
@@ -87,11 +94,12 @@ So the next layer can't be another better filter. It has to be **role-aware poli
 
 ## Roadmap
 
-1. **Role-aware policy.** Map `user_id` to a role and allow or block each data category by role. This closes the "what is being asked for" gap.
+1. **Role-aware policy.** Map each API key's `user_id` to a role and allow or block each data category by role. This closes the "what is being asked for" gap.
 2. **Intent judge.** Add a small open model (Llama Guard via Ollama) that labels the data category a prompt is reaching for.
-3. **Reduce false positives.** Phrases like "ignore the formatting in my notes" trip the classifier. Add a "warn and log" band for borderline scores instead of a hard block.
+3. **Reduce false positives.** Half come from the classifier (phrases like "ignore the formatting in my notes") and half from the embedding match (security and account questions near a blocked intent). Add a "warn and log" band for borderline scores on both layers instead of a hard block, and add allow-list examples for common security questions.
 4. **Output checks.** Scan responses for PII before they reach the user.
-5. **Compliance mapping.** Tag each control to the NIST AI RMF and EU AI Act obligations it supports, and export audit reports.
+5. **Abuse limits.** Rate limits per key, and an allow-list of models callers may request, before turning on a real provider.
+6. **Compliance mapping.** Tag each control to the NIST AI RMF and EU AI Act obligations it supports, and export audit reports.
 
 ## Run it locally
 
@@ -114,7 +122,7 @@ streamlit run dashboard/Home.py
 
 Paste `dev-admin` into the **API key** box in the dashboard sidebar. The admin key opens every page. A user key such as `dev-user-key` works only for the Playground.
 
-The first request takes a few seconds while the two models download and load. After that, checks take about 15 ms.
+The first request takes a few seconds while the two models download and load. After that, the two checks add roughly 15 ms per prompt (measured in batches; single requests are slower).
 
 To persist data, set `REPOSITORY_MODE=supabase`, fill in the Supabase and Langfuse keys from `.env.example`, then run `python scripts/migrate.py` and `python scripts/seed_policies.py`. The migrations turn on row-level security, so only the backend's service-role key can read or write the tables.
 
@@ -159,4 +167,7 @@ The Dockerfile runs FastAPI, Streamlit and nginx in one container on port 7860, 
 - I wrote the eval prompts myself. Testing against an independent red-team set is next.
 - With 15–20 prompts per category, the per-category numbers are directional.
 - The request log keeps the text of allowed prompts so traces are readable, and only the admin key can read it. Blocked prompts are stored as a hash.
-- API keys are static values from the environment. A production deployment should use SSO or short-lived tokens, plus rate limits.
+- API keys are static values from the environment. A production deployment should use SSO or short-lived tokens.
+- No rate limits yet, and callers choose the model string. Keep `DEFAULT_PROVIDER=mock` on any public deployment until both are added.
+- `/api/v1/policies/simulate` and gateway responses return similarity scores, which help an attacker tune a prompt to land just under the threshold. The simulator is admin-only; the gateway scores should be dropped for production.
+- In Supabase mode the threshold is read from the `app_settings` table, which `sql/001_init.sql` seeds at **0.90**, not 0.55. At 0.90 the embedding layer catches only 10% of attacks. Set it to 0.55 in the Policy Manager after migrating.
