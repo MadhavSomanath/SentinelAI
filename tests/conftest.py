@@ -13,12 +13,19 @@ from backend.main import create_app
 from backend.services.langfuse_client import NoOpTraceService
 from backend.services.llm_router import LLMRouter
 
+ADMIN_KEY = "test-admin-key"
+USER_KEY = "test-user-key"
+
 
 @pytest.fixture()
 def test_app():
     """Create a test application with in-memory dependencies."""
     settings = Settings(
-        repository_mode="memory", enable_langfuse=False, injection_classifier_enabled=False
+        repository_mode="memory",
+        enable_langfuse=False,
+        injection_classifier_enabled=False,
+        admin_api_key=ADMIN_KEY,
+        api_keys={USER_KEY: "alice"},
     )
     repository = InMemoryRepository(threshold=0.6)
     embedder = SimpleEmbeddingService()
@@ -91,8 +98,8 @@ def test_app():
 
 @pytest.fixture()
 def client(test_app):
-    """Return a test client."""
-    return TestClient(test_app)
+    """Return a test client authenticated with the admin key."""
+    return TestClient(test_app, headers={"X-API-Key": ADMIN_KEY})
 
 
 @pytest.fixture()

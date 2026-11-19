@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     langfuse_host: str = "https://cloud.langfuse.com"
 
     openai_api_key: SecretStr | None = None
+
+    # API_KEYS='{"<key>": "<user_id>"}'. The caller's identity comes from its key, never the request body.
+    api_keys: dict[str, str] = Field(default_factory=dict, repr=False)
+    admin_api_key: SecretStr | None = None
 
     @model_validator(mode="after")
     def validate_configuration(self) -> "Settings":

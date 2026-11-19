@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from backend.core.auth import require_admin
 from backend.core.dependencies import get_embedding_service, get_firewall_service, get_repository
 from backend.core.firewall import FirewallService
 from backend.db.repository import BaseRepository
@@ -16,7 +17,7 @@ from backend.schemas.policies import (
     PolicyUpdate,
 )
 
-router = APIRouter(prefix="/api/v1/policies", tags=["policies"])
+router = APIRouter(prefix="/api/v1/policies", tags=["policies"], dependencies=[Depends(require_admin)])
 
 
 @router.get("", response_model=PolicyListResponse)

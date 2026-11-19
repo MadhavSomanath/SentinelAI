@@ -2,11 +2,12 @@
 
 from fastapi import APIRouter, Depends, Query
 
+from backend.core.auth import require_admin
 from backend.core.dependencies import get_repository
 from backend.db.repository import BaseRepository
 from backend.schemas.responses import OverviewMetricsResponse, TraceListResponse, TraceRecord
 
-router = APIRouter(prefix="/api/v1", tags=["dashboard"])
+router = APIRouter(prefix="/api/v1", tags=["dashboard"], dependencies=[Depends(require_admin)])
 
 
 @router.get("/metrics/overview", response_model=OverviewMetricsResponse)

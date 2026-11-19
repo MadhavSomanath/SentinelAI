@@ -29,10 +29,10 @@ flowchart LR
     A --> D[Streamlit dashboard]
 ```
 
-1. **Contract check.** Every request must say who's asking, from which feature, and with which prompt version. A request without that context is rejected before any model sees it.
+1. **Contract check.** Every request needs an API key, and the caller's identity comes from that key, not from anything the caller types. Each request must also say which feature it comes from and which prompt version it uses. A request without that is rejected before any model sees it.
 2. **Injection classifier.** An open model ([protectai/deberta-v3-base-prompt-injection-v2](https://huggingface.co/protectai/deberta-v3-base-prompt-injection-v2)) catches the *how*: "ignore your instructions", role-play jailbreaks, instructions hidden in pasted emails, attacks written in other languages.
 3. **Policy match.** Each prompt is compared against a library of blocked intents (PII exfiltration, credential leaks, confidential data). The policy team can add or remove intents from the dashboard without a deploy.
-4. **Audit trail.** Every allowed and blocked request is logged with the user, feature, matched policy, risk score and latency. Blocked prompts are stored as a SHA-256 hash in the audit log.
+4. **Audit trail.** Every allowed and blocked request is logged with the user, feature, matched policy, risk score and latency. Blocked prompts are stored only as a SHA-256 hash.
 
 ## Results
 
@@ -103,7 +103,7 @@ pip install -r requirements.txt
 ```
 
 ```bash
-REPOSITORY_MODE=memory ENABLE_LANGFUSE=false uvicorn backend.main:app --port 8000
+REPOSITORY_MODE=memory ENABLE_LANGFUSE=false ADMIN_API_KEY=dev-admin API_KEYS='{"dev-user-key": "demo-user"}' uvicorn backend.main:app --port 8000
 ```
 
 In a second terminal:
@@ -112,15 +112,19 @@ In a second terminal:
 streamlit run dashboard/Home.py
 ```
 
+Paste `dev-admin` into the **API key** box in the dashboard sidebar. The admin key opens every page. A user key such as `dev-user-key` works only for the Playground.
+
 The first request takes a few seconds while the two models download and load. After that, checks take about 15 ms.
 
-To persist data, set `REPOSITORY_MODE=supabase`, fill in the Supabase and Langfuse keys from `.env.example`, then run `python scripts/migrate.py` and `python scripts/seed_policies.py`.
+To persist data, set `REPOSITORY_MODE=supabase`, fill in the Supabase and Langfuse keys from `.env.example`, then run `python scripts/migrate.py` and `python scripts/seed_policies.py`. The migrations turn on row-level security, so only the backend's service-role key can read or write the tables.
 
 ### Key settings
 
 | Variable | Default | What it does |
 |---|---|---|
 | `REPOSITORY_MODE` | `memory` | `memory` for local use, `supabase` for persistence |
+| `API_KEYS` | none | JSON map of gateway keys to user IDs, e.g. `{"key": "alice"}` |
+| `ADMIN_API_KEY` | none | Key for policies, settings, metrics and traces |
 | `INJECTION_CLASSIFIER_ENABLED` | `true` | Turns layer 2 on or off |
 | `INJECTION_CLASSIFIER_THRESHOLD` | `0.5` | Classifier score that triggers a block |
 | `FIREWALL_THRESHOLD` | `0.55` | Similarity score that triggers a policy block |
@@ -148,10 +152,11 @@ docker/            nginx + supervisord for a single-container deploy
 
 ## Deploy
 
-The Dockerfile runs FastAPI, Streamlit and nginx in one container on port 7860, which suits Hugging Face Docker Spaces. Add the `.env.example` values as Space secrets and keep `DEFAULT_PROVIDER=mock` for a public deployment.
+The Dockerfile runs FastAPI, Streamlit and nginx in one container on port 7860, which suits Hugging Face Docker Spaces. Add the `.env.example` values as Space secrets, including `ADMIN_API_KEY` and `API_KEYS`, and keep `DEFAULT_PROVIDER=mock` for a public deployment. Without keys, every route except `/health` returns 401.
 
 ## Known limits
 
 - I wrote the eval prompts myself. Testing against an independent red-team set is next.
 - With 15–20 prompts per category, the per-category numbers are directional.
-- The dashboard's request log keeps prompt text so traces are readable. A production deployment should redact or hash it, as the audit log already does.
+- The request log keeps the text of allowed prompts so traces are readable, and only the admin key can read it. Blocked prompts are stored as a hash.
+- API keys are static values from the environment. A production deployment should use SSO or short-lived tokens, plus rate limits.

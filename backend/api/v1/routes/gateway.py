@@ -9,6 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from backend.core.auth import require_user
 from backend.core.firewall import FirewallService
 from backend.core.dependencies import (
     get_firewall_service,
@@ -32,6 +33,7 @@ def prompt_hash(prompt: str) -> str:
 async def process_gateway_request(
     contract: PromptContract,
     *,
+    user_id: str,
     force_mock: bool,
     firewall_service: FirewallService,
     repository: BaseRepository,
@@ -61,7 +63,7 @@ async def process_gateway_request(
             {
                 "trace_id": trace_id,
                 "session_id": contract.session_id,
-                "user_id": contract.user_id,
+                "user_id": user_id,
                 "policy_id": decision.policy_id,
                 "similarity_score": decision.similarity_score,
                 "prompt_hash": prompt_hash(contract.prompt),
@@ -71,8 +73,8 @@ async def process_gateway_request(
         request_record = {
             "trace_id": trace_id,
             "session_id": contract.session_id,
-            "user_id": contract.user_id,
-            "prompt": contract.prompt,
+            "user_id": user_id,
+            "prompt": f"[blocked] sha256:{prompt_hash(contract.prompt)}",
             "output": None,
             "provider": "mock" if force_mock else contract.provider.value,
             "model": contract.model,
@@ -118,7 +120,7 @@ async def process_gateway_request(
     request_record = {
         "trace_id": trace_id,
         "session_id": contract.session_id,
-        "user_id": contract.user_id,
+        "user_id": user_id,
         "prompt": contract.prompt,
         "output": generation.output,
         "provider": generation.provider,
@@ -163,6 +165,7 @@ async def health(llm_router: LLMRouter = Depends(get_llm_router)) -> HealthRespo
 )
 async def gateway_chat(
     contract: PromptContract,
+    user_id: str = Depends(require_user),
     firewall_service: FirewallService = Depends(get_firewall_service),
     repository: BaseRepository = Depends(get_repository),
     trace_service=Depends(get_trace_service),
@@ -171,6 +174,7 @@ async def gateway_chat(
     """Validate, screen, and route a regular gateway request."""
     return await process_gateway_request(
         contract,
+        user_id=user_id,
         force_mock=False,
         firewall_service=firewall_service,
         repository=repository,
@@ -186,6 +190,7 @@ async def gateway_chat(
 )
 async def gateway_mock(
     contract: PromptContract,
+    user_id: str = Depends(require_user),
     firewall_service: FirewallService = Depends(get_firewall_service),
     repository: BaseRepository = Depends(get_repository),
     trace_service=Depends(get_trace_service),
@@ -194,6 +199,7 @@ async def gateway_mock(
     """Force the request through mock mode."""
     return await process_gateway_request(
         contract,
+        user_id=user_id,
         force_mock=True,
         firewall_service=firewall_service,
         repository=repository,

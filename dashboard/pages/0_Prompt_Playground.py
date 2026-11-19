@@ -11,10 +11,12 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from components.api_client import fetch_json, post_json_with_status
+from components.api_client import render_api_key_input
 from components.theme import load_css
 
 st.set_page_config(page_title="Prompt Playground", page_icon="S", layout="wide")
 load_css()
+render_api_key_input()
 
 SAMPLE_PROMPTS = {
     "Safe Example": {
@@ -89,7 +91,6 @@ with st.form("prompt_playground_form"):
 if submitted:
     payload = {
         "session_id": f"streamlit-session-{uuid4().hex[:8]}",
-        "user_id": "streamlit-demo-user",
         "prompt": prompt,
         "provider": provider,
         "model": model,

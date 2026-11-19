@@ -11,10 +11,12 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from components.api_client import fetch_json
+from components.api_client import render_api_key_input
 from components.theme import load_css
 
 st.set_page_config(page_title="Trace Explorer", page_icon="S", layout="wide")
 load_css()
+render_api_key_input()
 
 st.title("Trace Explorer")
 

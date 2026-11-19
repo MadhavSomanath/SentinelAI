@@ -19,7 +19,6 @@ class PromptContract(BaseModel):
     """Input contract for all gateway requests."""
 
     session_id: str = Field(min_length=1, max_length=128)
-    user_id: str = Field(min_length=1, max_length=128)
     prompt: str = Field(min_length=1, max_length=8000)
     provider: ProviderName
     model: str = Field(min_length=1, max_length=256)

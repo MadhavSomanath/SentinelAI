@@ -11,10 +11,12 @@ if str(ROOT_DIR) not in sys.path:
 
 from components.api_client import fetch_json
 from components.api_client import post_json
+from components.api_client import render_api_key_input
 from components.theme import load_css
 
 st.set_page_config(page_title="SentinelAI", page_icon="S", layout="wide")
 load_css()
+render_api_key_input()
 
 st.title("SentinelAI")
 st.caption("LLM governance dashboard")
@@ -38,7 +40,6 @@ if controls[1].button("Warm Up Gateway"):
             "/api/v1/gateway/mock",
             {
                 "session_id": "dashboard-warmup",
-                "user_id": "dashboard",
                 "prompt": "Warm up the SentinelAI mock gateway.",
                 "provider": "mock",
                 "model": "gpt-4o-mini",
